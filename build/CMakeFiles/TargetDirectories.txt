@@ -1,0 +1,3 @@
+/home/andrej/Programs/libtorchtest_4/build/CMakeFiles/main.dir
+/home/andrej/Programs/libtorchtest_4/build/CMakeFiles/edit_cache.dir
+/home/andrej/Programs/libtorchtest_4/build/CMakeFiles/rebuild_cache.dir
