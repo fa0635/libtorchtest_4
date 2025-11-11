@@ -8,6 +8,47 @@
 #include <random>
 #include <cmath>
 
+#include "TH1D.h"
+#include "TRandom3.h"
+
+#include "TROOT.h"
+#include "TObject.h"
+#include "TSystem.h"
+#include "TDirectory.h"
+#include "TFile.h"
+#include "TCanvas.h"
+#include "TColor.h"
+#include "TPad.h"
+#include "TGraph.h"
+#include "TMultiGraph.h"
+#include "TGraph2D.h"
+#include "TPolyLine3D.h"
+#include "TStyle.h"
+#include "TLatex.h"
+#include "TLegend.h"
+#include "TString.h"
+
+void rootplot(const float* x, const float* y, const int size, const std::string& output_filename)
+{
+    TFile* fout = 0;
+    fout = new TFile(output_filename.c_str(), "update");
+    TString topdir = gDirectory->GetPath();
+    TCanvas* can = new TCanvas("Training_dynamics", "Training_dynamics", 0, 0, 700, 500);
+    TGraph* graph = new TGraph(size);
+    for (int i = 0; i < size; ++i)
+    {
+        graph->SetPoint(i, x[i], y[i]);
+    }
+    graph->GetXaxis()->SetTitle("Epoch number");
+    graph->GetYaxis()->SetTitle("Loss");
+    graph->Draw("AL");
+    gDirectory->cd(topdir);
+    can->Write("abc", TObject::kWriteDelete, 0);
+    can = nullptr;
+    fout->Close();
+    fout = nullptr;
+}
+
 template <typename ActivationType = torch::nn::Tanh,
 typename EndActivationType = torch::nn::Identity>
 class MLPImpl final : public torch::nn::Module
@@ -311,6 +352,9 @@ int main()
         graph_edge_weights[i] = torch::ones({graph_edge_index[i].size(1), 1});
     }
 
+    float epoch_array[num_epochs];
+    float loss_array[num_epochs];
+
     std::vector<int> hidden_sizes = {64, 64};
     std::vector<int> hidden_sizes_mlp = {80, 80};
     auto model = NN<torch::nn::ReLU, torch::nn::Identity>(3, hidden_sizes, hidden_sizes, hidden_sizes_mlp, 32, 3);
@@ -333,7 +377,11 @@ int main()
             epoch_metric += metric.item<float>();
         }
         std::cout << "epoch:\t" << epoch << ";\tloss:\t" << epoch_loss / 100 << ";\tmetric:\t" << epoch_metric / 100 << '\n';
+        epoch_array[epoch] = (float)epoch;
+        loss_array[epoch] = epoch_loss / 100;
     }
+
+    rootplot(epoch_array, loss_array, num_epochs, "plot");
     
     auto finish = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed = finish - start;
